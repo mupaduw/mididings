@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import os
@@ -16,7 +16,6 @@ if sys.version_info >= (3,):
     from subprocess import getstatusoutput
 else:
     from commands import getstatusoutput
-
 
 version = '2015'
 
@@ -128,12 +127,17 @@ def boost_lib_name(name, add_suffixes=[]):
     Try to figure out the correct boost library name (with or without "-mt"
     suffix, or with any of the given additional suffixes).
     """
-    for suffix in add_suffixes + ['', '-mt']:
-        for libdir in lib_dirs():
-            for ext in ['so'] + ['dylib'] * (sys.platform == 'darwin'):
-                libname = 'lib%s%s.%s' % (name, suffix, ext)
-                if os.path.isfile(os.path.join(libdir, libname)):
-                    return name + suffix
+    print('boost_lib_name()', name, add_suffixes)
+    print(lib_dirs())
+    for suffix in add_suffixes + ['']:
+        for threading in ['-mt', '']: 
+            for libdir in lib_dirs():
+                for ext in ['so'] + ['dylib'] * (sys.platform == 'darwin'):
+                    libname = 'lib%s%s%s.%s' % (name, suffix, threading, ext)
+                    print('testing: ', os.path.join(libdir, libname))
+                    if os.path.isfile(os.path.join(libdir, libname)):
+                        print('found: ', os.path.join(libdir, libname))
+                        return name + suffix
     return name
 
 
@@ -148,14 +152,16 @@ sources = [
 
 include_dirs.append('src')
 
-boost_python_suffixes = ['-py%d%d' % sys.version_info[:2]]
+boost_python_suffixes = ['%d%d' % sys.version_info[:2]]
+
+BOOST_PYTHON = 'boost_python'
+BOOST_THREAD = 'boost_thread'
 if sys.version_info[0] == 3:
-    boost_python_suffixes.append('3')
-libraries.append(boost_lib_name('boost_python', boost_python_suffixes))
-libraries.append(boost_lib_name('boost_thread'))
+    BOOST_THREAD = 'boost_thread-mt'
 
+libraries.append(boost_lib_name(BOOST_PYTHON, boost_python_suffixes))
+libraries.append(boost_lib_name(BOOST_THREAD))
 library_dirs.extend(library_path_dirs())
-
 
 if config['alsa-seq']:
     define_macros.append(('ENABLE_ALSA_SEQ', 1))
@@ -205,4 +211,5 @@ setup(
         'scripts/livedings',
         'scripts/send_midi',
     ],
+    install_requires = ['decorator'],
 )
